@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class JammoController : MonoBehaviour
@@ -25,8 +27,10 @@ public class JammoController : MonoBehaviour
     private string _lastAnimationTrigger = null;
 
     private Command _lastCommand = null;
+    private Queue<IEnumerator> _punchChainQueue = new Queue<IEnumerator> ();
     private bool _isAttemptingPunch = false;
     private Coroutine _attackCoroutine = null;
+    private int _punchChainStep = 0;
     private bool _isAttacking => _attackCoroutine != null;
 
     public void ReadCommand(Command inCommand)
@@ -53,6 +57,7 @@ public class JammoController : MonoBehaviour
     }
 
 
+
     /// <summary>
     /// Update physics and animation
     /// </summary>
@@ -61,16 +66,31 @@ public class JammoController : MonoBehaviour
         // Update animation
         if (_isGrounded)
         {
-            if (_isAttemptingPunch && !_isAttacking)
+            if (_isAttemptingPunch)
             {
-                TriggerAnimation("Punch0");
-                _isAttemptingPunch = false;
-                _attackCoroutine = StartCoroutine(AttackSequence());
-                IEnumerator AttackSequence()
+                if (_punchChainQueue.Count <= 0)
                 {
-                    yield return new WaitForSeconds(0.25f);
-                    _attackCoroutine = null;
+                    _punchChainQueue.Enqueue(Punch());
+                    _attackCoroutine = StartCoroutine(_punchChainQueue.Peek());
                 }
+                else if (_punchChainQueue.Count < 3)
+                    _punchChainQueue.Enqueue(Punch());
+
+                IEnumerator Punch()
+                {
+                    TriggerAnimation("Punch" + _punchChainStep.ToString());
+                    _punchChainStep++;
+                    yield return new WaitForSeconds(0.25f * _punchChainStep);
+                    _punchChainQueue.Dequeue();
+                    if (_punchChainQueue.Count <= 0)
+                    {
+                        _punchChainStep = 0;
+                        _attackCoroutine = null;
+                    }
+                    else _attackCoroutine = StartCoroutine(_punchChainQueue.Peek());
+                    
+                }
+                _isAttemptingPunch = false;
             }
             else if (!_isAttacking)
             {
