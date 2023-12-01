@@ -15,7 +15,7 @@ public class JammoController : MonoBehaviour
     private Vector3 _velocity = Vector3.zero;
     private bool _isMovingRight = false;
     private bool _isMovingLeft = false;
-    private bool _isFacingLeft = false;
+    private bool _shouldFaceLeft = false;
     private bool _isAttemptingJump = false;
     private bool _isGrounded => transform.position.y <= 0;
 
@@ -40,30 +40,31 @@ public class JammoController : MonoBehaviour
     public void FixedUpdateController()
     {
         // Update horizontal velocity
-        if (_isMovingLeft)
+        if (_isGrounded)
         {
-            _velocity.x = -1 * Time.fixedDeltaTime * _moveSpeed;
-            _isFacingLeft = true;
+            if (_isMovingLeft)
+            {
+                _velocity.x = -1 * Time.fixedDeltaTime * _moveSpeed;
+                _shouldFaceLeft = true;
+            }
+            else if (_isMovingRight)
+            {
+                _velocity.x = Time.fixedDeltaTime * _moveSpeed;
+                _shouldFaceLeft = false;
+            }
+            else _velocity.x = 0;
         }
-        else if (_isMovingRight)
-        {
-            _velocity.x = Time.fixedDeltaTime * _moveSpeed;
-            _isFacingLeft = false;
-        }
-        else _velocity.x = 0;
 
         // Update vertical velocity
         if (_isAttemptingJump && _isGrounded)
-        {
             _velocity.y = Time.fixedDeltaTime * _jumpSpeed;
-        }
         _velocity.y -= Time.fixedDeltaTime * _gravity;
         
         // Update position and rotation
         var position = transform.position + _velocity;
         position.y = Mathf.Max(0, position.y);
         transform.position = position;
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_isFacingLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_shouldFaceLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
         
         // Update animation
         TriggerAnimation(_isMovingLeft || _isMovingRight ? "Walk" : "Idle");
