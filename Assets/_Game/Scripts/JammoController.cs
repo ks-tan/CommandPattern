@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class JammoController : MonoBehaviour
@@ -12,7 +11,10 @@ public class JammoController : MonoBehaviour
     [SerializeField] private float _jumpSpeed = 15f;
     [SerializeField] private float _gravity = 1f;
     [SerializeField] private float _fallMultiplier = 3f;
+
     private Vector3 _velocity = Vector3.zero;
+
+    // State flags
     private bool _isMovingRight = false;
     private bool _isMovingLeft = false;
     private bool _shouldFaceLeft = false;
@@ -20,19 +22,27 @@ public class JammoController : MonoBehaviour
     private bool _hasReleasedJump = true;
     private bool _isJumping = false;
     private bool _isRunning = false;
+    private bool _isAttemptingPunch = false;
     private bool _isGrounded => transform.position.y <= 0;
 
     [Header("Model")][Space]
     [SerializeField] private Animator _animator = null;
     private string _lastAnimationTrigger = null;
 
-    private Command _lastCommand = null;
-    private Queue<IEnumerator> _punchChainQueue = new Queue<IEnumerator> ();
-    private bool _isAttemptingPunch = false;
-    private Coroutine _attackCoroutine = null;
+    // For input buffering on punches to help us execute a 1-2-3 punch!
+    private Queue<IEnumerator> _punchCommandQueue = new Queue<IEnumerator> ();
     private int _punchChainStep = 0;
+
+    // For checking whether there is a current attack sequence happening, punches or combo
+    private Coroutine _attackCoroutine = null;
     private bool _isAttacking => _attackCoroutine != null;
 
+    private Command _lastInputCommand = null;
+
+    /// <summary>
+    /// Read a command and change the flags representing the character's state
+    /// </summary>
+    /// <param name="inCommand"></param>
     public void ReadCommand(Command inCommand)
     {
         if (inCommand.Action == Command.ActionType.RIGHT)
@@ -53,10 +63,8 @@ public class JammoController : MonoBehaviour
         if (inCommand.Action == Command.ActionType.ACTION_1)
             _isAttemptingPunch = inCommand.State == Command.KeyState.DOWN;
 
-        _lastCommand = inCommand;
+        _lastInputCommand = inCommand;
     }
-
-
 
     /// <summary>
     /// Update physics and animation
@@ -68,34 +76,15 @@ public class JammoController : MonoBehaviour
         {
             if (_isAttemptingPunch)
             {
-                if (_punchChainQueue.Count < 3)
-                    _punchChainQueue.Enqueue(Punch());
+                // Do not enqueue more than 3 punch commands (there are only max 3 chained punches)
+                if (_punchCommandQueue.Count < 3)
+                    _punchCommandQueue.Enqueue(PunchCommand());
 
-                if (_punchChainQueue.Count == 1)
-                    _attackCoroutine = StartCoroutine(_punchChainQueue.Peek());
+                // If there is only 1 punch command enqueued, trigger it.
+                // Every punch command will trigger the next punch command when completed.
+                if (_punchCommandQueue.Count == 1)
+                    _attackCoroutine = StartCoroutine(_punchCommandQueue.Peek());
 
-                IEnumerator Punch()
-                {
-                    TriggerAnimation("Punch" + _punchChainStep.ToString());
-                    
-                    _punchChainStep++;
-                    
-                    if (_punchChainStep == 1) yield return new WaitForSeconds(0.25f);
-                    if (_punchChainStep == 2) yield return new WaitForSeconds(0.5f);
-                    if (_punchChainStep == 3) yield return new WaitForSeconds(0.5f);
-                    
-                    _punchChainStep %= 3;
-
-                    _punchChainQueue.Dequeue();
-
-                    if (_punchChainQueue.Count <= 0)
-                    {
-                        _punchChainStep = 0;
-                        _attackCoroutine = null;
-                    }
-                    else _attackCoroutine = StartCoroutine(_punchChainQueue.Peek());
-                    
-                }
                 _isAttemptingPunch = false;
             }
             else if (!_isAttacking)
@@ -107,13 +96,6 @@ public class JammoController : MonoBehaviour
                 else if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
                 else if (!isMovingLeftOrRight) TriggerAnimation("Idle");
             }
-        }
-
-        void TriggerAnimation(string inTrigger)
-        {
-            if (_lastAnimationTrigger == inTrigger) return;
-            _lastAnimationTrigger = inTrigger;
-            _animator.SetTrigger(inTrigger);
         }
 
         // Update horizontal velocity
@@ -146,7 +128,38 @@ public class JammoController : MonoBehaviour
         position.y = Mathf.Max(0, position.y);
         transform.position = position;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_shouldFaceLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
-
     }
 
+    /// <summary>
+    /// An IEnumerator can also be a "command"! This helps us execute chained punches (1-2-3!).
+    /// It stores information on behaviour to be executed and triggers the next command in the queue when it is completed.
+    /// </summary>
+    private IEnumerator PunchCommand()
+    {
+        TriggerAnimation("Punch" + _punchChainStep.ToString());
+
+        _punchChainStep++;
+
+        if (_punchChainStep == 1) yield return new WaitForSeconds(0.25f);
+        if (_punchChainStep == 2) yield return new WaitForSeconds(0.5f);
+        if (_punchChainStep == 3) yield return new WaitForSeconds(0.5f);
+
+        _punchChainStep %= 3;
+
+        _punchCommandQueue.Dequeue();
+
+        if (_punchCommandQueue.Count <= 0)
+        {
+            _punchChainStep = 0;
+            _attackCoroutine = null;
+        }
+        else _attackCoroutine = StartCoroutine(_punchCommandQueue.Peek());
+    }
+
+    private void TriggerAnimation(string inTrigger)
+    {
+        if (_lastAnimationTrigger == inTrigger) return;
+        _lastAnimationTrigger = inTrigger;
+        _animator.SetTrigger(inTrigger);
+    }
 }
