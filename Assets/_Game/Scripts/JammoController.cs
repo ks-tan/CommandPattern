@@ -1,9 +1,8 @@
+using System.Collections;
 using UnityEngine;
 
 public class JammoController : MonoBehaviour
 {
-    private Command _lastCommand = null;
-
     [Header("Physics")][Space]
     [SerializeField] private float _moveSpeed = 2.5f;
     [SerializeField] private float _runSpeed = 5f;
@@ -25,6 +24,11 @@ public class JammoController : MonoBehaviour
     [SerializeField] private Animator _animator = null;
     private string _lastAnimationTrigger = null;
 
+    private Command _lastCommand = null;
+    private bool _isAttemptingPunch = false;
+    private Coroutine _attackCoroutine = null;
+    private bool _isAttacking => _attackCoroutine != null;
+
     public void ReadCommand(Command inCommand)
     {
         if (inCommand.Action == Command.ActionType.RIGHT)
@@ -42,8 +46,12 @@ public class JammoController : MonoBehaviour
         if (inCommand.Action == Command.ActionType.ACTION_0)
             _isRunning = inCommand.State == Command.KeyState.DOWN;
 
+        if (inCommand.Action == Command.ActionType.ACTION_1)
+            _isAttemptingPunch = inCommand.State == Command.KeyState.DOWN;
+
         _lastCommand = inCommand;
     }
+
 
     /// <summary>
     /// Update physics and animation
@@ -51,12 +59,29 @@ public class JammoController : MonoBehaviour
     public void FixedUpdateController()
     {
         // Update animation
-        var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
-        if (_isGrounded && _isAttemptingJump) TriggerAnimation("Jump");
-        else if (_isGrounded && _isJumping) { TriggerAnimation("Land"); _isJumping = false;}
-        else if (_isGrounded && isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
-        else if (_isGrounded && isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
-        else if (_isGrounded && !isMovingLeftOrRight) TriggerAnimation("Idle");
+        if (_isGrounded)
+        {
+            if (_isAttemptingPunch && !_isAttacking)
+            {
+                TriggerAnimation("Punch0");
+                _isAttemptingPunch = false;
+                _attackCoroutine = StartCoroutine(AttackSequence());
+                IEnumerator AttackSequence()
+                {
+                    yield return new WaitForSeconds(0.25f);
+                    _attackCoroutine = null;
+                }
+            }
+            else if (!_isAttacking)
+            {
+                var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
+                if (_isAttemptingJump) TriggerAnimation("Jump");
+                else if (_isJumping) { TriggerAnimation("Land"); _isJumping = false;}
+                else if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
+                else if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
+                else if (!isMovingLeftOrRight) TriggerAnimation("Idle");
+            }
+        }
 
         void TriggerAnimation(string inTrigger)
         {
@@ -68,12 +93,12 @@ public class JammoController : MonoBehaviour
         // Update horizontal velocity
         if (_isGrounded)
         {
-            if (_isMovingLeft)
+            if (_isMovingLeft && !_isAttacking)
             {
                 _velocity.x = -1 * Time.fixedDeltaTime * (_isRunning ? _runSpeed : _moveSpeed);
                 _shouldFaceLeft = true;
             }
-            else if (_isMovingRight)
+            else if (_isMovingRight && !_isAttacking)
             {
                 _velocity.x = Time.fixedDeltaTime * (_isRunning ? _runSpeed : _moveSpeed);
                 _shouldFaceLeft = false;
