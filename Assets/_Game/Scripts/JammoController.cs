@@ -68,20 +68,26 @@ public class JammoController : MonoBehaviour
         {
             if (_isAttemptingPunch)
             {
-                if (_punchChainQueue.Count <= 0)
-                {
+                if (_punchChainQueue.Count < 3)
                     _punchChainQueue.Enqueue(Punch());
+
+                if (_punchChainQueue.Count == 1)
                     _attackCoroutine = StartCoroutine(_punchChainQueue.Peek());
-                }
-                else if (_punchChainQueue.Count < 3)
-                    _punchChainQueue.Enqueue(Punch());
 
                 IEnumerator Punch()
                 {
                     TriggerAnimation("Punch" + _punchChainStep.ToString());
+                    
                     _punchChainStep++;
-                    yield return new WaitForSeconds(0.25f * _punchChainStep);
+                    
+                    if (_punchChainStep == 1) yield return new WaitForSeconds(0.25f);
+                    if (_punchChainStep == 2) yield return new WaitForSeconds(0.5f);
+                    if (_punchChainStep == 3) yield return new WaitForSeconds(0.5f);
+                    
+                    _punchChainStep %= 3;
+
                     _punchChainQueue.Dequeue();
+
                     if (_punchChainQueue.Count <= 0)
                     {
                         _punchChainStep = 0;
@@ -127,7 +133,7 @@ public class JammoController : MonoBehaviour
         }
 
         // Update vertical velocity
-        if (_isAttemptingJump && _isGrounded)
+        if (_isAttemptingJump && _isGrounded && !_isAttacking)
         {
             _velocity.y = Time.fixedDeltaTime * _jumpSpeed;
             _isAttemptingJump = false;
