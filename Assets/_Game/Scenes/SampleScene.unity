@@ -1357,9 +1357,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _moveSpeed: 2.5
+  _runSpeed: 5
   _rotationSpeed: 10
-  _jumpSpeed: 12
+  _jumpSpeed: 15
   _gravity: 1
+  _fallMultiplier: 3
   _animator: {fileID: 2022416811}
 --- !u!4 &960707486
 Transform:
@@ -1594,6 +1596,9 @@ MonoBehaviour:
   - _action: 6
     _keyCode: 120
     _debugString: X
+  - _action: 7
+    _keyCode: 99
+    _debugString: C
 --- !u!4 &2141379391
 Transform:
   m_ObjectHideFlags: 0

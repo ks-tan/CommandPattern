@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class JammoController : MonoBehaviour
@@ -9,14 +6,18 @@ public class JammoController : MonoBehaviour
 
     [Header("Physics")][Space]
     [SerializeField] private float _moveSpeed = 2.5f;
+    [SerializeField] private float _runSpeed = 5f;
     [SerializeField] private float _rotationSpeed = 10f;
-    [SerializeField] private float _jumpSpeed = 12f;
+    [SerializeField] private float _jumpSpeed = 15f;
     [SerializeField] private float _gravity = 1f;
+    [SerializeField] private float _fallMultiplier = 3f;
     private Vector3 _velocity = Vector3.zero;
     private bool _isMovingRight = false;
     private bool _isMovingLeft = false;
     private bool _shouldFaceLeft = false;
     private bool _isAttemptingJump = false;
+    private bool _hasReleasedJump = true;
+    private bool _isRunning = false;
     private bool _isGrounded => transform.position.y <= 0;
 
     [Header("Model")][Space]
@@ -27,10 +28,19 @@ public class JammoController : MonoBehaviour
     {
         if (inCommand.Action == Command.ActionType.RIGHT)
             _isMovingRight = inCommand.State == Command.KeyState.DOWN;
+
         if (inCommand.Action == Command.ActionType.LEFT)
             _isMovingLeft = inCommand.State == Command.KeyState.DOWN;
+
         if (inCommand.Action == Command.ActionType.JUMP)
+        {
             _isAttemptingJump = inCommand.State == Command.KeyState.DOWN;
+            _hasReleasedJump = inCommand.State == Command.KeyState.UP;
+        }
+
+        if (inCommand.Action == Command.ActionType.ACTION_0)
+            _isRunning = inCommand.State == Command.KeyState.DOWN;
+
         _lastCommand = inCommand;
     }
 
@@ -44,12 +54,12 @@ public class JammoController : MonoBehaviour
         {
             if (_isMovingLeft)
             {
-                _velocity.x = -1 * Time.fixedDeltaTime * _moveSpeed;
+                _velocity.x = -1 * Time.fixedDeltaTime * (_isRunning ? _runSpeed : _moveSpeed);
                 _shouldFaceLeft = true;
             }
             else if (_isMovingRight)
             {
-                _velocity.x = Time.fixedDeltaTime * _moveSpeed;
+                _velocity.x = Time.fixedDeltaTime * (_isRunning ? _runSpeed : _moveSpeed);
                 _shouldFaceLeft = false;
             }
             else _velocity.x = 0;
@@ -58,16 +68,19 @@ public class JammoController : MonoBehaviour
         // Update vertical velocity
         if (_isAttemptingJump && _isGrounded)
             _velocity.y = Time.fixedDeltaTime * _jumpSpeed;
-        _velocity.y -= Time.fixedDeltaTime * _gravity;
+        _velocity.y -= Time.fixedDeltaTime * _gravity * (_hasReleasedJump ? _fallMultiplier : 1);
         
         // Update position and rotation
         var position = transform.position + _velocity;
         position.y = Mathf.Max(0, position.y);
         transform.position = position;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_shouldFaceLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
-        
+
         // Update animation
-        TriggerAnimation(_isMovingLeft || _isMovingRight ? "Walk" : "Idle");
+        var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
+        if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
+        if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
+        if (!isMovingLeftOrRight) TriggerAnimation("Idle");
         
         void TriggerAnimation(string inTrigger)
         {

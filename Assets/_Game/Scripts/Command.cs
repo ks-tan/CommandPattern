@@ -4,7 +4,7 @@ using UnityEngine;
 [Serializable]
 public class Command
 {
-    public enum ActionType { UP, DOWN, LEFT, RIGHT, JUMP, ACTION_0, ACTION_1 }
+    public enum ActionType { UP, DOWN, LEFT, RIGHT, JUMP, ACTION_0, ACTION_1, ACTION_2 }
     public enum KeyState { UP, DOWN }
 
     [SerializeField] private ActionType _action;
