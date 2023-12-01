@@ -5,15 +5,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private InputManager _inputManager;
     [SerializeField] private JammoController _playerController;
 
-    private void Start()
-    {
-        _inputManager.Setup(_playerController);
-    }
-
     private void Update()
     {
-        _inputManager.UpdateInput();
-        _playerController.UpdateController();
+        if (_inputManager.TryGetInput(out Command input))
+            _playerController.ReadCommand(input);
     }
 
     private void FixedUpdate()
