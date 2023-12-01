@@ -17,6 +17,7 @@ public class JammoController : MonoBehaviour
     private bool _shouldFaceLeft = false;
     private bool _isAttemptingJump = false;
     private bool _hasReleasedJump = true;
+    private bool _isJumping = false;
     private bool _isRunning = false;
     private bool _isGrounded => transform.position.y <= 0;
 
@@ -49,6 +50,21 @@ public class JammoController : MonoBehaviour
     /// </summary>
     public void FixedUpdateController()
     {
+        // Update animation
+        var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
+        if (_isGrounded && _isAttemptingJump) TriggerAnimation("Jump");
+        else if (_isGrounded && _isJumping) { TriggerAnimation("Land"); _isJumping = false;}
+        else if (_isGrounded && isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
+        else if (_isGrounded && isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
+        else if (_isGrounded && !isMovingLeftOrRight) TriggerAnimation("Idle");
+
+        void TriggerAnimation(string inTrigger)
+        {
+            if (_lastAnimationTrigger == inTrigger) return;
+            _lastAnimationTrigger = inTrigger;
+            _animator.SetTrigger(inTrigger);
+        }
+
         // Update horizontal velocity
         if (_isGrounded)
         {
@@ -67,7 +83,11 @@ public class JammoController : MonoBehaviour
 
         // Update vertical velocity
         if (_isAttemptingJump && _isGrounded)
+        {
             _velocity.y = Time.fixedDeltaTime * _jumpSpeed;
+            _isAttemptingJump = false;
+            _isJumping = true;
+        }
         _velocity.y -= Time.fixedDeltaTime * _gravity * (_hasReleasedJump ? _fallMultiplier : 1);
         
         // Update position and rotation
@@ -76,18 +96,6 @@ public class JammoController : MonoBehaviour
         transform.position = position;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_shouldFaceLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
 
-        // Update animation
-        var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
-        if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
-        if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
-        if (!isMovingLeftOrRight) TriggerAnimation("Idle");
-        
-        void TriggerAnimation(string inTrigger)
-        {
-            if (_lastAnimationTrigger == inTrigger) return;
-            _lastAnimationTrigger = inTrigger;
-            _animator.SetTrigger(inTrigger);
-        }
     }
 
 }
