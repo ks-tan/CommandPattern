@@ -48,7 +48,7 @@ public class JammoController : MonoBehaviour
 
     private Command _lastInputCommand = null;
 
-    public void Reset()
+    public void ResetController()
     {
         if (_punchCoroutine != null) StopCoroutine(_punchCoroutine);
         if (_specialMoveCoroutine != null) StopCoroutine(_specialMoveCoroutine);

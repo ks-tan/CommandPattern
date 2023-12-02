@@ -8,6 +8,8 @@ public class InputManager : MonoBehaviour
 
     private List<Command> _commandHistory = new List<Command>();
 
+    private float _startTime = 0;
+
     public bool TryGetInput(out Command input)
     {
         input = null;
@@ -15,9 +17,9 @@ public class InputManager : MonoBehaviour
         foreach (var command in _commandInputMap)
         {
             if (Input.GetKeyDown(command.KeyCode))
-                input = command.CreateCopy(Command.KeyState.DOWN, Time.time, Time.frameCount);
+                input = command.CreateCopy(Command.KeyState.DOWN, Time.time - _startTime, Time.frameCount);
             if (Input.GetKeyUp(command.KeyCode))
-                input = command.CreateCopy(Command.KeyState.UP, Time.time, Time.frameCount);
+                input = command.CreateCopy(Command.KeyState.UP, Time.time - _startTime, Time.frameCount);
         }
 
         if (input == null)
@@ -35,5 +37,9 @@ public class InputManager : MonoBehaviour
         return copy;
     }
 
-    public void ClearHistory() => _commandHistory.Clear();
+    public void ClearHistory()
+    {
+        _commandHistory.Clear();
+        _startTime = Time.time;
+    }
 }
