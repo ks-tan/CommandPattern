@@ -16,11 +16,21 @@ public class SpecialMove : ScriptableObject
         public bool IsSequenceFound(Queue<Command> commandsArray) 
         {
             var commandActions = new List<Command.ActionType>();
+            
             foreach (var command in commandsArray)
                 if (command.State == Command.KeyState.DOWN)
                     commandActions.Add(command.Action);
-            var intersect = commandActions.Intersect(_actions);
-            return intersect.Count() == _actions.Count;
+            
+            var intersect = commandActions.Intersect(_actions).ToArray();
+            
+            if (intersect.Count() != _actions.Count)
+                return false;
+
+            for (int i = 0; i < intersect.Count(); i++)
+                if (intersect[i] != _actions[i])
+                    return false;
+
+            return true;
         }
     }
 
