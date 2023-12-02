@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
@@ -6,6 +7,8 @@ public class InputManager : MonoBehaviour
     [SerializeField] private List<Command> _commandInputMap = new List<Command>();
 
     private List<Command> _commandHistory = new List<Command>();
+
+    public ReadOnlyCollection<Command> CommandHistory => _commandHistory.AsReadOnly();
 
     public bool TryGetInput(out Command input)
     {
@@ -25,4 +28,6 @@ public class InputManager : MonoBehaviour
         _commandHistory.Add(input);
         return true;
     }
+
+    public void ClearHistory() => _commandHistory.Clear();
 }

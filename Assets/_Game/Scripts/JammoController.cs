@@ -14,7 +14,7 @@ public class JammoController : MonoBehaviour
 
     private Vector3 _velocity = Vector3.zero;
 
-    // State flags
+    // Movement state flags
     private bool _isMovingRight = false;
     private bool _isMovingLeft = false;
     private bool _shouldFaceLeft = false;
@@ -47,6 +47,27 @@ public class JammoController : MonoBehaviour
     private bool _isAttacking => _isPunching || _isExecutingSpecialMove;
 
     private Command _lastInputCommand = null;
+
+    public void Reset()
+    {
+        _velocity = Vector3.zero;
+        _isMovingRight = false;
+        _isMovingLeft = false;
+        _shouldFaceLeft = false;
+        _isAttemptingJump = false;
+        _hasReleasedJump = true;
+        _isJumping = false;
+        _isRunning = false;
+        _isAttemptingPunch = false;
+        _lastInputCommand = null;
+        _lastAnimationTrigger = null;
+        _punchChainStep = 0;
+        _punchCoroutine = null;
+        _punchCommandQueue.Clear();
+        _specialMoveCoroutine = null;
+        _specialMovesCommandQueue.Clear();
+        transform.position = new Vector3(0, 0, -6);
+    }
 
     /// <summary>
     /// Read a command and change the flags representing the character's state
