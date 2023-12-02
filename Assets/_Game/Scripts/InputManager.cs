@@ -8,8 +8,6 @@ public class InputManager : MonoBehaviour
 
     private List<Command> _commandHistory = new List<Command>();
 
-    public ReadOnlyCollection<Command> CommandHistory => _commandHistory.AsReadOnly();
-
     public bool TryGetInput(out Command input)
     {
         input = null;
@@ -27,6 +25,14 @@ public class InputManager : MonoBehaviour
             
         _commandHistory.Add(input);
         return true;
+    }
+
+    public List<Command> CopyHistory()
+    {
+        var copy = new List<Command>();
+        foreach (var command in _commandHistory)
+            copy.Add(command.CreateCopy());
+        return copy;
     }
 
     public void ClearHistory() => _commandHistory.Clear();

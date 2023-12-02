@@ -29,6 +29,11 @@ public class Command
         Frame = inFrame;
     }
 
+    public Command CreateCopy()
+    {
+        return new Command(Action, KeyCode, _debugString, State, Time, Frame);
+    }
+
     public Command CreateCopy(KeyState inState, float inTime, int inFixedUpdateFrame)
     {
         return new Command(Action, KeyCode, _debugString, inState, inTime, inFixedUpdateFrame);

@@ -50,7 +50,10 @@ public class JammoController : MonoBehaviour
 
     public void Reset()
     {
-        _velocity = Vector3.zero;
+        if (_punchCoroutine != null) StopCoroutine(_punchCoroutine);
+        if (_specialMoveCoroutine != null) StopCoroutine(_specialMoveCoroutine);
+        _punchCoroutine = null;
+        _specialMoveCoroutine = null;
         _isMovingRight = false;
         _isMovingLeft = false;
         _shouldFaceLeft = false;
@@ -62,10 +65,9 @@ public class JammoController : MonoBehaviour
         _lastInputCommand = null;
         _lastAnimationTrigger = null;
         _punchChainStep = 0;
-        _punchCoroutine = null;
         _punchCommandQueue.Clear();
-        _specialMoveCoroutine = null;
         _specialMovesCommandQueue.Clear();
+        _velocity = Vector3.zero;
         transform.position = new Vector3(0, 0, -6);
     }
 
