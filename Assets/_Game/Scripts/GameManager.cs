@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
     {
         // Get all commands in InputManager's history and map it to a new JammoController
         var newJammo = Instantiate(_jammoPrefab);
-        newJammo.ResetController();
+        newJammo.ResetController(shouldChangeColor: true);
         _jammoToCommandsMap.Add(newJammo, _inputManager.CopyHistory());
         _jammoToCommandIndex.Add(newJammo, 0);
         _jammoCreationTimes.Add(newJammo, Time.time);

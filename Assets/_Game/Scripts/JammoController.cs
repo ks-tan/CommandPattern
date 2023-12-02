@@ -27,6 +27,7 @@ public class JammoController : MonoBehaviour
 
     [Header("Model")][Space]
     [SerializeField] private Animator _animator = null;
+    [SerializeField] private Texture2D[] _albedoList;
     private string _lastAnimationTrigger = null;
 
     // Input buffering on punches to help us execute a 1-2-3 punch!
@@ -48,7 +49,7 @@ public class JammoController : MonoBehaviour
 
     private Command _lastInputCommand = null;
 
-    public void ResetController()
+    public void ResetController(bool shouldChangeColor = false)
     {
         if (_punchCoroutine != null) StopCoroutine(_punchCoroutine);
         if (_specialMoveCoroutine != null) StopCoroutine(_specialMoveCoroutine);
@@ -69,6 +70,8 @@ public class JammoController : MonoBehaviour
         _specialMovesCommandQueue.Clear();
         _velocity = Vector3.zero;
         transform.position = new Vector3(0, 0, -6);
+        if (shouldChangeColor)
+            ChangeMaterialSettings(Random.Range(1, _albedoList.Length));
     }
 
     /// <summary>
@@ -225,5 +228,14 @@ public class JammoController : MonoBehaviour
         if (_lastAnimationTrigger == inTrigger) return;
         _lastAnimationTrigger = inTrigger;
         _animator.SetTrigger(inTrigger);
+    }
+
+    private void ChangeMaterialSettings(int index)
+    {
+        Debug.LogWarning(_albedoList.Length);
+        var characterMaterials = GetComponentsInChildren<Renderer>();
+        for (int i = 0; i < characterMaterials.Length; i++)
+            if (!characterMaterials[i].transform.CompareTag("PlayerEyes"))
+                characterMaterials[i].material.SetTexture("_MainTex", _albedoList[index]);
     }
 }
