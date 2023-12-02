@@ -33,6 +33,12 @@ public class JammoController : MonoBehaviour
     private Queue<IEnumerator> _punchCommandQueue = new Queue<IEnumerator> ();
     private int _punchChainStep = 0;
 
+    // For input buffering for special moves
+    [SerializeField] private List<SpecialMove> _specialMoves = null;
+    [SerializeField] private float _maxTimeBetweenCommands = 0.2f;
+    [SerializeField] private int _maxCommandsInSpecialMovesBuffer = 5;
+    private Queue<Command> _specialMovesCommandQueue = new Queue<Command> ();
+
     // For checking whether there is a current attack sequence happening, punches or combo
     private Coroutine _attackCoroutine = null;
     private bool _isAttacking => _attackCoroutine != null;
@@ -62,6 +68,17 @@ public class JammoController : MonoBehaviour
 
         if (inCommand.Action == Command.ActionType.ACTION_1)
             _isAttemptingPunch = inCommand.State == Command.KeyState.DOWN;
+
+        // Enqueue the current command into the special moves command queue
+        // But first, check whether it should be cleared (more than time limit) or dequeued (max commands reached)
+        if (_lastInputCommand != null)
+        {
+            if (inCommand.Time - _lastInputCommand.Time > _maxTimeBetweenCommands)
+                _specialMovesCommandQueue.Clear();
+            else if (_specialMovesCommandQueue.Count >= _maxCommandsInSpecialMovesBuffer)
+                _specialMovesCommandQueue.Dequeue();
+        }
+        _specialMovesCommandQueue.Enqueue(inCommand);
 
         _lastInputCommand = inCommand;
     }
@@ -95,6 +112,17 @@ public class JammoController : MonoBehaviour
                 else if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
                 else if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
                 else if (!isMovingLeftOrRight) TriggerAnimation("Idle");
+            }
+        }
+
+        // Check for special moves (note: always override other moves)
+        foreach (var specialMove in _specialMoves)
+        {
+            if (specialMove.IsSequenceFound(_specialMovesCommandQueue))
+            {
+                TriggerAnimation(specialMove.Name.ToString());
+                _specialMovesCommandQueue.Clear();
+                break;
             }
         }
 

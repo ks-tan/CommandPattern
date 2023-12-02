@@ -1363,6 +1363,10 @@ MonoBehaviour:
   _gravity: 1
   _fallMultiplier: 3
   _animator: {fileID: 2022416811}
+  _specialMoves:
+  - {fileID: 11400000, guid: 70dde49d802fa6a4cbdc314b643527f9, type: 2}
+  _maxTimeBetweenCommands: 0.2
+  _maxCommandsInSpecialMovesBuffer: 5
 --- !u!4 &960707486
 Transform:
   m_ObjectHideFlags: 0
