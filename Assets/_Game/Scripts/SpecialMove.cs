@@ -25,12 +25,12 @@ public class SpecialMove : ScriptableObject
     }
 
     // Enum values should match special move triggers found in AnimatorControllers
-    public enum MoveName { Fireball }
+    public enum Move { Fireball }
 
-    [SerializeField] private MoveName _name;
+    [SerializeField] private Move _name;
     [SerializeField] private List<MoveSequence> _sequences;
 
-    public MoveName Name => _name;
+    public Move Name => _name;
 
     public bool IsSequenceFound(Queue<Command> commandsArray)
     {

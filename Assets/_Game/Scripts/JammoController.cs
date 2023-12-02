@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class JammoController : MonoBehaviour
@@ -29,19 +30,22 @@ public class JammoController : MonoBehaviour
     [SerializeField] private Animator _animator = null;
     private string _lastAnimationTrigger = null;
 
-    // For input buffering on punches to help us execute a 1-2-3 punch!
-    private Queue<IEnumerator> _punchCommandQueue = new Queue<IEnumerator> ();
+    // Input buffering on punches to help us execute a 1-2-3 punch!
+    private bool _isPunching => _punchCoroutine != null;
+    private Coroutine _punchCoroutine = null;
     private int _punchChainStep = 0;
+    private Queue<IEnumerator> _punchCommandQueue = new Queue<IEnumerator> ();
 
-    // For input buffering for special moves
-    [SerializeField] private List<SpecialMove> _specialMoves = null;
+    // Input buffering for special moves
+    [Header("Special Moves")][Space]
     [SerializeField] private float _maxTimeBetweenCommands = 0.2f;
-    [SerializeField] private int _maxCommandsInSpecialMovesBuffer = 5;
+    [SerializeField] private int _maxCommandsInSpecialMovesBuffer = 10;
+    [SerializeField] private List<SpecialMove> _specialMoves = null;
+    private bool _isExecutingSpecialMove => _specialMoveCoroutine != null;
+    private Coroutine _specialMoveCoroutine = null;
     private Queue<Command> _specialMovesCommandQueue = new Queue<Command> ();
 
-    // For checking whether there is a current attack sequence happening, punches or combo
-    private Coroutine _attackCoroutine = null;
-    private bool _isAttacking => _attackCoroutine != null;
+    private bool _isAttacking => _isPunching || _isExecutingSpecialMove;
 
     private Command _lastInputCommand = null;
 
@@ -88,41 +92,44 @@ public class JammoController : MonoBehaviour
     /// </summary>
     public void FixedUpdateController()
     {
-        // Update animation
-        if (_isGrounded)
+        if (!_isExecutingSpecialMove)
         {
-            if (_isAttemptingPunch)
+            // Update animation
+            if (_isGrounded)
             {
-                // Do not enqueue more than 3 punch commands (there are only max 3 chained punches)
-                if (_punchCommandQueue.Count < 3)
-                    _punchCommandQueue.Enqueue(PunchCommand());
+                if (_isAttemptingPunch)
+                {
+                    // Do not enqueue more than 3 punch commands (there are only max 3 chained punches)
+                    if (_punchCommandQueue.Count < 3)
+                        _punchCommandQueue.Enqueue(PunchCommand());
 
-                // If there is only 1 punch command enqueued, trigger it.
-                // Every punch command will trigger the next punch command when completed.
-                if (_punchCommandQueue.Count == 1)
-                    _attackCoroutine = StartCoroutine(_punchCommandQueue.Peek());
+                    // If there is only 1 punch command enqueued, trigger it.
+                    // Every punch command will trigger the next punch command when completed.
+                    if (_punchCommandQueue.Count == 1)
+                        _punchCoroutine = StartCoroutine(_punchCommandQueue.Peek());
 
-                _isAttemptingPunch = false;
+                    _isAttemptingPunch = false;
+                }
+                else if (!_isAttacking)
+                {
+                    var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
+                    if (_isAttemptingJump) TriggerAnimation("Jump");
+                    else if (_isJumping) { TriggerAnimation("Land"); _isJumping = false; }
+                    else if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
+                    else if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
+                    else if (!isMovingLeftOrRight) TriggerAnimation("Idle");
+                }
             }
-            else if (!_isAttacking)
-            {
-                var isMovingLeftOrRight = _isMovingLeft || _isMovingRight;
-                if (_isAttemptingJump) TriggerAnimation("Jump");
-                else if (_isJumping) { TriggerAnimation("Land"); _isJumping = false;}
-                else if (isMovingLeftOrRight && _isRunning) TriggerAnimation("Run");
-                else if (isMovingLeftOrRight && !_isRunning) TriggerAnimation("Walk");
-                else if (!isMovingLeftOrRight) TriggerAnimation("Idle");
-            }
-        }
 
-        // Check for special moves (note: always override other moves)
-        foreach (var specialMove in _specialMoves)
-        {
-            if (specialMove.IsSequenceFound(_specialMovesCommandQueue))
+            // Check for special moves (note: always override other moves)
+            foreach (var specialMove in _specialMoves)
             {
-                TriggerAnimation(specialMove.Name.ToString());
-                _specialMovesCommandQueue.Clear();
-                break;
+                if (specialMove.IsSequenceFound(_specialMovesCommandQueue))
+                {
+                    _specialMoveCoroutine = StartCoroutine(ExecuteSpecialMove(specialMove.Name));
+                    _specialMovesCommandQueue.Clear();
+                    break;
+                }
             }
         }
 
@@ -179,9 +186,16 @@ public class JammoController : MonoBehaviour
         if (_punchCommandQueue.Count <= 0)
         {
             _punchChainStep = 0;
-            _attackCoroutine = null;
+            _punchCoroutine = null;
         }
-        else _attackCoroutine = StartCoroutine(_punchCommandQueue.Peek());
+        else _punchCoroutine = StartCoroutine(_punchCommandQueue.Peek());
+    }
+
+    private IEnumerator ExecuteSpecialMove(SpecialMove.Move inMove)
+    {
+        TriggerAnimation(inMove.ToString());
+        yield return new WaitForSeconds(1f);
+        _specialMoveCoroutine = null;
     }
 
     private void TriggerAnimation(string inTrigger)
