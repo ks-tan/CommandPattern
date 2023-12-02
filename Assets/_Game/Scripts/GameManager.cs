@@ -18,6 +18,14 @@ public class GameManager : MonoBehaviour
         {
             if (input.Action == Command.ActionType.OPTION_0 && input.State == Command.KeyState.DOWN)
             {
+                // Reset all Jammos
+                foreach (var jammo in _jammoToCommandsMap.Keys)
+                {
+                    jammo.Reset();
+                    _jammoToCommandIndex[jammo] = 0;
+                }
+                _playerController.Reset();
+
                 // Get all commands in InputManager's history and map it to a new JammoController
                 var newJammo = Instantiate(_jammoPrefab);
                 newJammo.Reset();
@@ -27,9 +35,7 @@ public class GameManager : MonoBehaviour
                 _jammoToCommandIndex.Add(newJammo, 0);
                 _jammoCreationTimes.Add(newJammo, Time.time);
 
-                // Reset player's position and clear InputManager's command history
                 _inputManager.ClearHistory();
-                _playerController.Reset();
             }
             // Else, just feed command to the player controller
             else _playerController.ReadCommand(input);
