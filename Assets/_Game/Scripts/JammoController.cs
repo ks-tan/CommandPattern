@@ -232,10 +232,9 @@ public class JammoController : MonoBehaviour
 
     private void ChangeMaterialSettings(int index)
     {
-        Debug.LogWarning(_albedoList.Length);
         var characterMaterials = GetComponentsInChildren<Renderer>();
         for (int i = 0; i < characterMaterials.Length; i++)
-            if (!characterMaterials[i].transform.CompareTag("PlayerEyes"))
+            if (!characterMaterials[i].transform.name.Contains("eye"))
                 characterMaterials[i].material.SetTexture("_MainTex", _albedoList[index]);
     }
 }
