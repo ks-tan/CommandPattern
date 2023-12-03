@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -11,18 +12,27 @@ public class GameManager : MonoBehaviour
     [SerializeField] private JammoController _jammoPrefab;
     [SerializeField] private Transform _inputDisplayTextHolder;
     [SerializeField] private TextMeshProUGUI _inputDisplayText;
+    [SerializeField] private bool _playReplayFile = false;
 
     // For tracking replays
     private Dictionary<JammoController, List<Command>> _jammoToCommandsMap = new Dictionary<JammoController, List<Command>>();
     private Dictionary<JammoController, int> _jammoToCommandIndex = new Dictionary<JammoController, int>();
     private Dictionary<JammoController, float> _jammoCreationTimes = new Dictionary<JammoController, float>();
-
     private const string REPLAY_FILE_SEPARATOR = "==========";
     private const string REPLAY_FILE_PATH = "Assets/_Game/Replay.txt";
 
+    private void Start()
+    {
+        if (_playReplayFile)
+        {
+            ReadReplaysFromFile();
+            _playerController.gameObject.SetActive(false);
+        }
+    }
+
     private void Update()
     {
-        if (_inputManager.TryGetInput(out Command input))
+        if (_inputManager.TryGetInput(out Command input) && !_playReplayFile)
         {
             ShowInputDisplay(input);
 
@@ -93,13 +103,31 @@ public class GameManager : MonoBehaviour
         string data = "";
         foreach(var commandsList in  _jammoToCommandsMap.Values)
         {
-            data += REPLAY_FILE_SEPARATOR + "\n";
+            data += REPLAY_FILE_SEPARATOR + "\r\n";
             foreach (var command in commandsList)
-                data += command + "\n";
+                data += command + "\r\n";
         }
         StreamWriter writer = new StreamWriter(REPLAY_FILE_PATH, false);
         writer.WriteLine(data);
         writer.Close();
+    }
+
+    private void ReadReplaysFromFile()
+    {
+        StreamReader reader = new StreamReader(REPLAY_FILE_PATH);
+        var text = reader.ReadToEnd();
+        var data = text.Split(REPLAY_FILE_SEPARATOR + "\r\n");
+        foreach(var chunk in data)
+        {
+            if (chunk.Length <= 0) continue;
+            var commandList = new List<Command>();
+            var commandStrings = chunk.Split("\r\n");
+            foreach (var commandString in commandStrings)
+                if (commandString.Length > 0)
+                    commandList.Add(Command.FromString(commandString));
+            CreateReplay(commandList);
+        }
+        reader.Close();
     }
 
     private void ShowInputDisplay(Command inCommand)
