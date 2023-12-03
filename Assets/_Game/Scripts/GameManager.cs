@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -6,6 +8,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private InputManager _inputManager;
     [SerializeField] private JammoController _playerController;
     [SerializeField] private JammoController _jammoPrefab;
+    [SerializeField] private Transform _inputDisplayTextHolder;
+    [SerializeField] private TextMeshProUGUI _inputDisplayText;
 
     // For tracking replays
     private Dictionary<JammoController, List<Command>> _jammoToCommandsMap = new Dictionary<JammoController, List<Command>>();
@@ -19,6 +23,7 @@ public class GameManager : MonoBehaviour
             var shouldCreateReplay = input.Action == Command.ActionType.OPTION_0 && input.State == Command.KeyState.DOWN;
             if (shouldCreateReplay) CreateReplay();
             else _playerController.ReadCommand(input);
+            ShowInputDisplay(input);
         }
 
         FeedCommandToAllReplays();
@@ -72,6 +77,27 @@ public class GameManager : MonoBehaviour
                 jammo.ReadCommand(currentCommand);
                 _jammoToCommandIndex[jammo]++;
             }
+        }
+    }
+
+    private void ShowInputDisplay(Command inCommand)
+    {
+        if (inCommand.State != Command.KeyState.DOWN) return;
+        var tmp = Instantiate(_inputDisplayText, _inputDisplayTextHolder);
+        tmp.gameObject.SetActive(true);
+        tmp.text = inCommand.ToString();
+        StartCoroutine(FadeOut());
+        IEnumerator FadeOut()
+        {
+            yield return new WaitForSeconds(1);
+            var elapsed = 0f;
+            while (elapsed < 1)
+            {
+                elapsed += Time.deltaTime;
+                tmp.alpha = Mathf.Lerp(1, 0, elapsed / 1);
+                yield return null;
+            }
+            Destroy(tmp.gameObject);
         }
     }
 }
