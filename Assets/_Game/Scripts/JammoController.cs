@@ -40,6 +40,7 @@ public class JammoController : MonoBehaviour
     [Header("Special Moves")][Space]
     [SerializeField] private float _maxTimeBetweenCommands = 0.2f;
     [SerializeField] private int _maxCommandsInSpecialMovesBuffer = 10;
+    [SerializeField] private ParticleSystem _fireballParticle = null;
     [SerializeField] private List<SpecialMove> _specialMoves = null;
     private bool _isExecutingSpecialMove => _specialMoveCoroutine != null;
     private Coroutine _specialMoveCoroutine = null;
@@ -219,8 +220,32 @@ public class JammoController : MonoBehaviour
     private IEnumerator ExecuteSpecialMove(SpecialMove.Move inMove)
     {
         TriggerAnimation(inMove.ToString());
+
+        // TODO: We should extract logic of spawning particles to their corresponding SpecialMoves
+        // TODO: Manage particle effects using object pooling
+        var fireball = Instantiate(_fireballParticle);
+        fireball.transform.position = _fireballParticle.transform.position;
+        fireball.gameObject.SetActive(true);
+        StartCoroutine(MoveFireball());
+
         yield return new WaitForSeconds(1f);
+
         _specialMoveCoroutine = null;
+
+        IEnumerator MoveFireball()
+        {
+            float duration = 3;
+            float elapsedTime = 0;
+            Vector3 startPosition = fireball.transform.position;
+            Vector3 endPosition = startPosition + Vector3.right * 10 * (_shouldFaceLeft ? -1 : 1);
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                fireball.transform.position = Vector3.Lerp(startPosition, endPosition, elapsedTime/duration);
+                yield return null;
+            }
+            Destroy(fireball.gameObject);
+        }
     }
 
     private void TriggerAnimation(string inTrigger)
