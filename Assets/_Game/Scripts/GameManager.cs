@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 
@@ -16,14 +17,21 @@ public class GameManager : MonoBehaviour
     private Dictionary<JammoController, int> _jammoToCommandIndex = new Dictionary<JammoController, int>();
     private Dictionary<JammoController, float> _jammoCreationTimes = new Dictionary<JammoController, float>();
 
+    private const string REPLAY_FILE_SEPARATOR = "==========";
+    private const string REPLAY_FILE_PATH = "Assets/_Game/Replay.txt";
+
     private void Update()
     {
         if (_inputManager.TryGetInput(out Command input))
         {
-            var shouldCreateReplay = input.Action == Command.ActionType.OPTION_0 && input.State == Command.KeyState.DOWN;
-            if (shouldCreateReplay) CreateReplay();
-            else _playerController.ReadCommand(input);
             ShowInputDisplay(input);
+
+            var shouldCreateReplay = input.Action == Command.ActionType.OPTION_0 && input.State == Command.KeyState.DOWN;
+            if (shouldCreateReplay) CreateReplay(_inputManager.CopyHistory());
+            else _playerController.ReadCommand(input);
+
+            var shouldSerializeCommands = input.Action == Command.ActionType.OPTION_1 && input.State == Command.KeyState.DOWN;
+            if (shouldSerializeCommands) WriteReplaysToFile();
         }
 
         FeedCommandToAllReplays();
@@ -39,12 +47,12 @@ public class GameManager : MonoBehaviour
             jammo.FixedUpdateController();
     }
 
-    private void CreateReplay()
+    private void CreateReplay(List<Command> inCommands)
     {
         // Get all commands in InputManager's history and map it to a new JammoController
         var newJammo = Instantiate(_jammoPrefab);
         newJammo.ResetController(shouldChangeColor: true);
-        _jammoToCommandsMap.Add(newJammo, _inputManager.CopyHistory());
+        _jammoToCommandsMap.Add(newJammo, inCommands);
         _jammoToCommandIndex.Add(newJammo, 0);
         _jammoCreationTimes.Add(newJammo, Time.time);
 
@@ -80,12 +88,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void WriteReplaysToFile()
+    {
+        string data = "";
+        foreach(var commandsList in  _jammoToCommandsMap.Values)
+        {
+            data += REPLAY_FILE_SEPARATOR + "\n";
+            foreach (var command in commandsList)
+                data += command + "\n";
+        }
+        StreamWriter writer = new StreamWriter(REPLAY_FILE_PATH, false);
+        writer.WriteLine(data);
+        writer.Close();
+    }
+
     private void ShowInputDisplay(Command inCommand)
     {
         if (inCommand.State != Command.KeyState.DOWN) return;
         var tmp = Instantiate(_inputDisplayText, _inputDisplayTextHolder);
         tmp.gameObject.SetActive(true);
-        tmp.text = inCommand.ToString();
+        tmp.text = inCommand.DebugString;
         StartCoroutine(FadeOut());
         IEnumerator FadeOut()
         {

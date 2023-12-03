@@ -4,7 +4,7 @@ using UnityEngine;
 [Serializable]
 public class Command
 {
-    public enum ActionType { UP, DOWN, LEFT, RIGHT, JUMP, ACTION_0, ACTION_1, ACTION_2, OPTION_0 }
+    public enum ActionType { UP, DOWN, LEFT, RIGHT, JUMP, ACTION_0, ACTION_1, ACTION_2, OPTION_0, OPTION_1 }
     public enum KeyState { UP, DOWN }
 
     [SerializeField] private ActionType _action;
@@ -17,7 +17,8 @@ public class Command
 
     public ActionType Action => _action;
     public KeyCode KeyCode => _keyCode;
-    public override string ToString() => _debugString;
+    public string DebugString => _debugString;
+    public override string ToString() => $"{Action},{KeyCode},{DebugString},{State},{Time},{Frame}";
 
     private Command(ActionType inAction, KeyCode inKeyCode, string inDebugString, KeyState inState, float inTime, int inFrame)
     {
@@ -37,5 +38,17 @@ public class Command
     public Command CreateCopy(KeyState inState, float inTime, int inFixedUpdateFrame)
     {
         return new Command(Action, KeyCode, _debugString, inState, inTime, inFixedUpdateFrame);
+    }
+
+    public static Command FromString(string inString)
+    {
+        var data = inString.Split(",");
+        return new Command(
+            inAction: (ActionType)Enum.Parse(typeof(ActionType), data[0]),
+            inKeyCode: (KeyCode)Enum.Parse(typeof(KeyCode), data[1]),
+            inDebugString: data[2],
+            inState: (KeyState)Enum.Parse(typeof(KeyState), data[3]),
+            inTime: float.Parse(data[4]),
+            inFrame: int.Parse(data[5]));
     }
 }

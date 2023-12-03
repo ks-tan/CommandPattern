@@ -894,6 +894,9 @@ MonoBehaviour:
   - _action: 8
     _keyCode: 113
     _debugString: Q
+  - _action: 9
+    _keyCode: 119
+    _debugString: W
 --- !u!4 &2141379391
 Transform:
   m_ObjectHideFlags: 0
