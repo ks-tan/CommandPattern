@@ -1,10 +1,10 @@
-# Fighting Game Template in Unity using the Command Pattern
+# Fighting Game Template using the Command Pattern
 
 ![KeyMap](./Screenshots/SavedReplays.gif)
 
 This is an educational resource to explain the "Command Pattern" and it's usefulness in game development.
 
-Note that this resource is created to be pedagogical in nature and not for production, so optimization and other improvements that could still be made are outside the scope of this project.
+Note that this resource is created to be pedagogical in nature and not for production, so optimization and other improvements that could still be made are outside the scope of this Unity project.
 
 ## Getting started
 
