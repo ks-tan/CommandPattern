@@ -26,9 +26,9 @@ If you run the scene with `GameManager.PlayReplayFile = true` (assignable from t
 
 ## Explaining the Command Pattern
 
-The purpose of the Command pattern is to encapsulate a request (in our case, a user input) as an object, thereby allowing it to be passed as a parameter to other objects (in our case, a character controller). These "Command" objects can also stored as part of a collection for delayed/scheduled execution, in what is known as "input buffering".
-
 ![KeyMap](./Screenshots/CommandQueueDiagram.png)
+
+The purpose of the Command pattern is to encapsulate a request (in our case, a user input) as an object, thereby allowing it to be passed as a parameter to other objects (in our case, a character controller). These "Command" objects can also stored as part of a collection for delayed/scheduled execution, in what is known as "input buffering".
 
 This setup enables the InputManager to remain unaware of the implementation details of the character controller and vice-versa, hence achieving loose coupling. It also allows us to easily extend our game with cool features, such as instant replays or to create chained actions/combos.
 
