@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using UnityEngine;
 
 public class InputManager : MonoBehaviour
@@ -27,19 +26,5 @@ public class InputManager : MonoBehaviour
             
         _commandHistory.Add(input);
         return true;
-    }
-
-    public List<Command> CopyHistory()
-    {
-        var copy = new List<Command>();
-        foreach (var command in _commandHistory)
-            copy.Add(command.CreateCopy());
-        return copy;
-    }
-
-    public void ClearHistory()
-    {
-        _commandHistory.Clear();
-        _startTime = Time.time;
     }
 }

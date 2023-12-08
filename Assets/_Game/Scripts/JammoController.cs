@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class JammoController : MonoBehaviour
 {
+    #region Properties
+
     [Header("Physics")][Space]
     [SerializeField] private float _moveSpeed = 2.5f;
     [SerializeField] private float _runSpeed = 5f;
@@ -50,30 +52,9 @@ public class JammoController : MonoBehaviour
 
     private Command _lastInputCommand = null;
 
-    public void ResetController(bool shouldChangeColor = false)
-    {
-        if (_punchCoroutine != null) StopCoroutine(_punchCoroutine);
-        if (_specialMoveCoroutine != null) StopCoroutine(_specialMoveCoroutine);
-        _punchCoroutine = null;
-        _specialMoveCoroutine = null;
-        _isMovingRight = false;
-        _isMovingLeft = false;
-        _shouldFaceLeft = false;
-        _isAttemptingJump = false;
-        _hasReleasedJump = true;
-        _isJumping = false;
-        _isRunning = false;
-        _isAttemptingPunch = false;
-        _lastInputCommand = null;
-        _lastAnimationTrigger = null;
-        _punchChainStep = 0;
-        _punchCommandQueue.Clear();
-        _specialMovesCommandQueue.Clear();
-        _velocity = Vector3.zero;
-        transform.position = new Vector3(0, 0, -6);
-        if (shouldChangeColor)
-            ChangeMaterialSettings(Random.Range(1, _albedoList.Length));
-    }
+    #endregion
+
+    #region Public methods
 
     /// <summary>
     /// Read a command and change the flags representing the character's state
@@ -191,6 +172,10 @@ public class JammoController : MonoBehaviour
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_shouldFaceLeft ? Vector3.back : Vector3.forward), Time.fixedDeltaTime * _rotationSpeed);
     }
 
+    #endregion
+
+    #region Private methods
+
     /// <summary>
     /// An IEnumerator can also be a "command"! This helps us execute chained punches (1-2-3!).
     /// It stores information on behaviour to be executed and triggers the next command in the queue when it is completed.
@@ -255,11 +240,5 @@ public class JammoController : MonoBehaviour
         _animator.SetTrigger(inTrigger);
     }
 
-    private void ChangeMaterialSettings(int index)
-    {
-        var characterMaterials = GetComponentsInChildren<Renderer>();
-        for (int i = 0; i < characterMaterials.Length; i++)
-            if (!characterMaterials[i].transform.name.Contains("eye"))
-                characterMaterials[i].material.SetTexture("_MainTex", _albedoList[index]);
-    }
+    #endregion
 }
