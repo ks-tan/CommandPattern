@@ -34,11 +34,49 @@ This setup enables the InputManager to remain unaware of the implementation deta
 
 ## "no-replays" branch
 
-As mentioned, one of the biggest advantages of the Command Pattern is the decoupling of the "requestor" (i.e. InputManager) from the "executor" (i.e. "PlayerController").
+As mentioned, one of the biggest advantages of the Command Pattern is the decoupling of the "requestor" (i.e. InputManager) from the "executor" (i.e. "PlayerController"). To fully showcase the simplicity of such an implementation, you may go to the "no-replays" branch. You would see that:
 
-To fully showcase the simplicity of such an implementation, you may go to the "no-replays" branch which removes the implementation of "saved replays" and "instant replays". 
+- The API (i.e. public methods) of these classes is few and straightforward. By reducing the surface through which different components can interact with each other, it also reduces the chances of bugs and makes code easy to trace.
 
-## Credits
+- InputManager and JammoController are 100% agnostic to each other's implementation. You can see that from how they hold no direct references/handlers to each other!
+
+If designed well, we can have a highly extensible and de-coupled input system with tiny code footprint!
+
+```c#
+// InputManager.cs
+public class InputManager : MonoBehaviour
+{
+    // For reading player input e.g. "Input.GetKeyDown(...)"
+    // And converting player input to a Command object
+    public bool TryGetInput(out Command input) { ... }
+}
+
+// JammoController.cs
+public class JammoController : MonoBehaviour
+{
+    // For accepting Command objects from InputManager
+    public void ReadCommand(Command inCommand) { ... }
+} 
+
+// GameManager.cs
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] private InputManager _inputManager;
+    [SerializeField] private JammoController _playerController;
+
+    private void Update()
+    {
+        // Simply takes Command objects received from InputManager
+        // and pipe it to JammoController (player)
+        if (_inputManager.TryGetInput(out Command input))
+            _playerController.ReadCommand(input);
+    }
+}
+```
+
+## License and Credits
+
+This project is licensed under the terms of the GNU General Public License v3.0.
 
 - Developer: Tan Kang Soon, 2023
 - Character Model: "Jammo" from "Mix and Jam"
